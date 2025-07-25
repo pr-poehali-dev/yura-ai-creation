@@ -9,9 +9,68 @@ const Index = () => {
   const [isTestBotOpen, setIsTestBotOpen] = useState(false);
   const [messages, setMessages] = useState([
     { id: 1, text: "Привет! Я демо-бот. Попробуй меня протестировать!", isBot: true },
-    { id: 2, text: "Напиши 'привет', 'помощь' или 'услуги'", isBot: true }
+    { id: 2, text: "Напиши 'привет', 'помощь', 'услуги' или 'игра'", isBot: true }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [gameState, setGameState] = useState({ type: null, data: null });
+
+  const games = {
+    guessNumber: {
+      start: () => {
+        const number = Math.floor(Math.random() * 100) + 1;
+        setGameState({ type: 'guessNumber', data: { number, attempts: 0 } });
+        return "🎯 Игра началась! Я загадал число от 1 до 100. Попробуй угадать!";
+      },
+      play: (guess) => {
+        const { number, attempts } = gameState.data;
+        const userNumber = parseInt(guess);
+        const newAttempts = attempts + 1;
+        
+        if (isNaN(userNumber)) {
+          return "Пожалуйста, введи число от 1 до 100!";
+        }
+        
+        if (userNumber === number) {
+          setGameState({ type: null, data: null });
+          return `🎉 Поздравляю! Ты угадал число ${number} за ${newAttempts} попыток!\nНапиши 'игра' для новой игры.`;
+        } else if (userNumber < number) {
+          setGameState({ type: 'guessNumber', data: { number, attempts: newAttempts } });
+          return `📈 Больше! Попытка ${newAttempts}`;
+        } else {
+          setGameState({ type: 'guessNumber', data: { number, attempts: newAttempts } });
+          return `📉 Меньше! Попытка ${newAttempts}`;
+        }
+      }
+    },
+    quiz: {
+      questions: [
+        { q: "Какой язык программирования используется для создания веб-страниц?", a: ["javascript", "js"] },
+        { q: "Что означает HTML?", a: ["hypertext markup language", "гипертекстовая разметка"] },
+        { q: "В каком году был создан React?", a: ["2013"] },
+        { q: "Как называется популярная библиотека для стилизации CSS?", a: ["tailwind", "bootstrap"] }
+      ],
+      start: () => {
+        const question = games.quiz.questions[Math.floor(Math.random() * games.quiz.questions.length)];
+        setGameState({ type: 'quiz', data: { question, score: 0 } });
+        return `🧠 Викторина началась!\n\n${question.q}`;
+      },
+      play: (answer) => {
+        const { question, score } = gameState.data;
+        const userAnswer = answer.toLowerCase().trim();
+        const isCorrect = question.a.some(correctAnswer => 
+          userAnswer.includes(correctAnswer.toLowerCase())
+        );
+        
+        if (isCorrect) {
+          setGameState({ type: null, data: null });
+          return `✅ Правильно! Отличная работа!\nТвой счет: ${score + 1}\nНапиши 'викторина' для следующего вопроса.`;
+        } else {
+          setGameState({ type: null, data: null });
+          return `❌ Неправильно. Правильный ответ: ${question.a[0]}\nНапиши 'викторина' для нового вопроса.`;
+        }
+      }
+    }
+  };
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -19,21 +78,41 @@ const Index = () => {
     const userMessage = { id: Date.now(), text: inputValue, isBot: false };
     setMessages(prev => [...prev, userMessage]);
 
-    // Простая логика ответов бота
+    // Логика ответов бота с играми
     setTimeout(() => {
       let botResponse = "Интересно! Расскажи больше.";
       const input = inputValue.toLowerCase();
       
-      if (input.includes("привет") || input.includes("здравствуй")) {
-        botResponse = "Привет! Как дела? Чем могу помочь?";
-      } else if (input.includes("помощь") || input.includes("help")) {
-        botResponse = "Я могу помочь с:\n• Информацией об услугах\n• Записью на консультацию\n• Ответами на вопросы";
-      } else if (input.includes("услуг") || input.includes("сервис")) {
-        botResponse = "У нас есть:\n🤖 Создание ботов\n📊 Аналитика\n🔧 Техподдержка\n\nЧто интересует?";
-      } else if (input.includes("цена") || input.includes("стоимость")) {
-        botResponse = "Наши тарифы:\n💫 Базовый - 1000₽/мес\n🚀 Профи - 3000₽/мес\n⭐ Корпоративный - по запросу";
-      } else if (input.includes("спасибо") || input.includes("благодар")) {
-        botResponse = "Всегда пожалуйста! Обращайтесь если что! 😊";
+      // Обработка игр
+      if (gameState.type === 'guessNumber') {
+        botResponse = games.guessNumber.play(input);
+      } else if (gameState.type === 'quiz') {
+        botResponse = games.quiz.play(input);
+      } else {
+        // Обычные команды
+        if (input.includes("привет") || input.includes("здравствуй")) {
+          botResponse = "Привет! Как дела? Чем могу помочь?\nМожешь написать 'игра' для развлечения! 🎮";
+        } else if (input.includes("помощь") || input.includes("help")) {
+          botResponse = "Я могу помочь с:\n• Информацией об услугах\n• Записью на консультацию\n• Ответами на вопросы\n• Играми для отдыха 🎯\n\nНапиши 'игра' или 'викторина'!";
+        } else if (input.includes("услуг") || input.includes("сервис")) {
+          botResponse = "У нас есть:\n🤖 Создание ботов\n📊 Аналитика\n🔧 Техподдержка\n🎮 Игровые функции\n\nЧто интересует?";
+        } else if (input.includes("цена") || input.includes("стоимость")) {
+          botResponse = "Наши тарифы:\n💫 Базовый - 1000₽/мес\n🚀 Профи - 3000₽/мес\n⭐ Корпоративный - по запросу";
+        } else if (input.includes("спасибо") || input.includes("благодар")) {
+          botResponse = "Всегда пожалуйста! Обращайтесь если что! 😊\nХочешь поиграть? Напиши 'игра'! 🎮";
+        } else if (input.includes("игра") || input.includes("играть")) {
+          botResponse = "🎮 Выбери игру:\n\n🎯 'угадай число' - угадай число от 1 до 100\n🧠 'викторина' - проверь свои знания\n🎲 'рандом' - случайная игра\n\nЧто выбираешь?";
+        } else if (input.includes("угадай") || input.includes("число")) {
+          botResponse = games.guessNumber.start();
+        } else if (input.includes("викторина") || input.includes("вопрос")) {
+          botResponse = games.quiz.start();
+        } else if (input.includes("рандом") || input.includes("случайн")) {
+          const randomGame = Math.random() > 0.5 ? games.guessNumber.start() : games.quiz.start();
+          botResponse = "🎲 Случайная игра!\n\n" + randomGame;
+        } else if (input.includes("стоп") || input.includes("выход")) {
+          setGameState({ type: null, data: null });
+          botResponse = "🚪 Игра остановлена. Напиши 'игра' чтобы начать снова!";
+        }
       }
 
       const botMessage = { id: Date.now() + 1, text: botResponse, isBot: true };
@@ -135,7 +214,7 @@ const Index = () => {
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">Попробуйте написать: привет, помощь, услуги, цена</p>
+                    <p className="text-xs text-gray-500 mt-2">Попробуйте: привет, помощь, услуги, цена, игра, викторина 🎮</p>
                   </div>
                 </div>
               </DialogContent>
@@ -335,12 +414,84 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
             </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg flex items-center justify-center mb-4">
+                  <Icon name="Gamepad2" size={24} className="text-white" />
+                </div>
+                <CardTitle>Игровые функции</CardTitle>
+                <CardDescription>
+                  Развлекайте пользователей мини-играми и викторинами
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center mb-4">
+                  <Icon name="Zap" size={24} className="text-white" />
+                </div>
+                <CardTitle>Умная автоматизация</CardTitle>
+                <CardDescription>
+                  Автоматические ответы и обработка сложных запросов
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Games Section */}
+      <section className="px-6 py-20 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 text-gray-900">Игровые возможности ботов</h2>
+            <p className="text-xl text-gray-600">Развлекайте пользователей мини-играми и викторинами</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            <Card className="border-2 border-purple-100 hover:border-purple-200 transition-colors">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mb-4">
+                  <Icon name="Target" size={24} className="text-white" />
+                </div>
+                <CardTitle>Угадай число</CardTitle>
+                <CardDescription>
+                  Классическая игра на угадывание числа от 1 до 100
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 border-blue-100 hover:border-blue-200 transition-colors">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-4">
+                  <Icon name="Brain" size={24} className="text-white" />
+                </div>
+                <CardTitle>Викторина</CardTitle>
+                <CardDescription>
+                  Проверьте знания с помощью интерактивных вопросов
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 border-green-100 hover:border-green-200 transition-colors">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
+                  <Icon name="Dice6" size={24} className="text-white" />
+                </div>
+                <CardTitle>Случайная игра</CardTitle>
+                <CardDescription>
+                  Бот сам выберет игру для максимального веселья
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Testing Section */}
-      <section className="px-6 py-20 bg-white">
+      <section className="px-6 py-20 bg-gradient-to-br from-slate-50 to-blue-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 text-gray-900">Тестирование ботов</h2>
