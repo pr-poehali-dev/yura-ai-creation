@@ -1,8 +1,48 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import Icon from "@/components/ui/icon";
+import { useState } from "react";
 
 const Index = () => {
+  const [isTestBotOpen, setIsTestBotOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Привет! Я демо-бот. Попробуй меня протестировать!", isBot: true },
+    { id: 2, text: "Напиши 'привет', 'помощь' или 'услуги'", isBot: true }
+  ]);
+  const [inputValue, setInputValue] = useState("");
+
+  const handleSendMessage = () => {
+    if (!inputValue.trim()) return;
+
+    const userMessage = { id: Date.now(), text: inputValue, isBot: false };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Простая логика ответов бота
+    setTimeout(() => {
+      let botResponse = "Интересно! Расскажи больше.";
+      const input = inputValue.toLowerCase();
+      
+      if (input.includes("привет") || input.includes("здравствуй")) {
+        botResponse = "Привет! Как дела? Чем могу помочь?";
+      } else if (input.includes("помощь") || input.includes("help")) {
+        botResponse = "Я могу помочь с:\n• Информацией об услугах\n• Записью на консультацию\n• Ответами на вопросы";
+      } else if (input.includes("услуг") || input.includes("сервис")) {
+        botResponse = "У нас есть:\n🤖 Создание ботов\n📊 Аналитика\n🔧 Техподдержка\n\nЧто интересует?";
+      } else if (input.includes("цена") || input.includes("стоимость")) {
+        botResponse = "Наши тарифы:\n💫 Базовый - 1000₽/мес\n🚀 Профи - 3000₽/мес\n⭐ Корпоративный - по запросу";
+      } else if (input.includes("спасибо") || input.includes("благодар")) {
+        botResponse = "Всегда пожалуйста! Обращайтесь если что! 😊";
+      }
+
+      const botMessage = { id: Date.now() + 1, text: botResponse, isBot: true };
+      setMessages(prev => [...prev, botMessage]);
+    }, 1000);
+
+    setInputValue("");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation */}
@@ -43,10 +83,63 @@ const Index = () => {
               <Icon name="Play" size={20} className="mr-2" />
               Создать бота
             </Button>
-            <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
-              <Icon name="Eye" size={20} className="mr-2" />
-              Посмотреть демо
-            </Button>
+            <Dialog open={isTestBotOpen} onOpenChange={setIsTestBotOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="outline" className="px-8 py-4 text-lg">
+                  <Icon name="MessageSquare" size={20} className="mr-2" />
+                  Протестировать бота
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md h-[600px] p-0">
+                <DialogHeader className="p-6 pb-0">
+                  <DialogTitle className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                      <Icon name="Bot" size={16} className="text-white" />
+                    </div>
+                    Тестирование бота
+                    <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="flex flex-col h-full">
+                  {/* Область сообщений */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {messages.map((message) => (
+                      <div key={message.id} className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`max-w-[80%] p-3 rounded-lg ${
+                          message.isBot 
+                            ? 'bg-gray-100 text-gray-900 rounded-bl-none' 
+                            : 'bg-blue-500 text-white rounded-br-none'
+                        }`}>
+                          <p className="text-sm whitespace-pre-line">{message.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Поле ввода */}
+                  <div className="p-4 border-t bg-gray-50">
+                    <div className="flex gap-2">
+                      <Input
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        placeholder="Напишите сообщение..."
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={handleSendMessage}
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600"
+                      >
+                        <Icon name="Send" size={16} />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Попробуйте написать: привет, помощь, услуги, цена</p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="relative max-w-4xl mx-auto">
@@ -143,10 +236,14 @@ const Index = () => {
                 </div>
                 
                 <div className="flex gap-2 mt-4">
-                  <Button size="sm" variant="outline" className="text-xs">
-                    <Icon name="ThumbsUp" size={12} className="mr-1" />
-                    Помогло
-                  </Button>
+                  <Dialog open={isTestBotOpen} onOpenChange={setIsTestBotOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <Icon name="TestTube2" size={12} className="mr-1" />
+                        Тестировать
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
                   <Button size="sm" variant="outline" className="text-xs">
                     <Icon name="MessageSquare" size={12} className="mr-1" />
                     Написать
@@ -238,6 +335,105 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Testing Section */}
+      <section className="px-6 py-20 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4 text-gray-900">Тестирование ботов</h2>
+            <p className="text-xl text-gray-600">Проверяйте работу ботов перед запуском</p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <Card className="border-2 border-green-100 hover:border-green-200 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Icon name="TestTube2" size={20} className="text-green-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Интерактивное тестирование</CardTitle>
+                      <CardDescription>Общайтесь с ботом в реальном времени</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="border-2 border-orange-100 hover:border-orange-200 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Icon name="Bug" size={20} className="text-orange-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Отладка сценариев</CardTitle>
+                      <CardDescription>Находите и исправляйте ошибки в логике</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Card className="border-2 border-blue-100 hover:border-blue-200 transition-colors">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Icon name="FileText" size={20} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Логи тестирования</CardTitle>
+                      <CardDescription>Детальные отчеты о работе бота</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <Dialog open={isTestBotOpen} onOpenChange={setIsTestBotOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white">
+                    <Icon name="Play" size={20} className="mr-2" />
+                    Запустить тестирование
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-8">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Icon name="TestTube2" size={20} className="text-green-600" />
+                    <span className="font-semibold text-gray-900">Режим тестирования</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-green-600">Активен</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="bg-blue-500 text-white p-3 rounded-lg rounded-bl-none max-w-xs">
+                    Добро пожаловать в тест-режим!
+                  </div>
+                  <div className="bg-gray-100 text-gray-900 p-3 rounded-lg rounded-br-none max-w-xs ml-auto">
+                    Проверяю сценарии...
+                  </div>
+                  <div className="bg-blue-500 text-white p-3 rounded-lg rounded-bl-none max-w-xs">
+                    ✅ Все сценарии работают корректно
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700 text-sm">
+                    <Icon name="CheckCircle" size={16} />
+                    <span>Тестирование прошло успешно</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
